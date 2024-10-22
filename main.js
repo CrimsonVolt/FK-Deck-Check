@@ -9,25 +9,6 @@ $(document).ready(function() {
     });
 });
 
-function list() {
-    let dict = new Object();
-    fetch(
-        "https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/FK102024.lflist.conf"
-    )
-        .then((response) => response.text())
-        .then((data) => {
-            var cards = data.split("\n");
-            for (let i = 0; i < cards.length; i++) {
-                var card = cards[i].split("--");
-                var props = card[0].split(" ")
-                if(!isNaN(props[0]) && props[0].length > 0) {
-                    dict[props[0]] = [card[1], props[1]];
-                }
-            }
-        });
-    console.log(dict);
-}
-
 function deckCheck(deckString) {
     var cards = deckString.split("\n");
     var deck = {};
