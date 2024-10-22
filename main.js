@@ -1,5 +1,7 @@
 $(document).ready(function() {
+    console.log("Test 1");
     document.getElementById('input').addEventListener('change', function(event) {
+        console.log("Test 2");
         const file = event.target.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
