@@ -5,6 +5,7 @@ body {
     color: #f4f4f4; /* Light text color for contrast */
     margin: 0;
     padding: 20px;
+    visibility: hidden;
 }
 
 .container {

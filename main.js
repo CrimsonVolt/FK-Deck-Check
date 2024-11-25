@@ -1,3 +1,7 @@
+$(window).on('load', function() {
+    $('body').css('visibility', 'visible'); // Show body when fully loaded
+});
+
 $(document).ready(function() {
     document.getElementById('ydk-import').addEventListener('change', function(event) {
         const file = event.target.files[0];
@@ -80,6 +84,7 @@ function splitNameNumber(inputString) {
 }
 
 function deckCheck(deck) {
+    console.log(deck);
     var valid = true;
     var tooMany = false;
 
@@ -101,14 +106,19 @@ function deckCheck(deck) {
     fetch("https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/banlist.json")
     .then((response) => response.text())
     .then((data) => {
-        let bans = new Object();
-        bans = JSON.parse(data)
+        let bans = JSON.parse(data);
+        // Normalize keys
+        bans = Object.fromEntries(Object.entries(bans).map(([key, value]) => [key.toLowerCase(), value]));
+
         for (card in deck) {
             var count = deck[card];
 
-            if (Object.keys(bans).some(ban => ban.toLowerCase() === card.toLowerCase())) {
-                var key = Object.keys(bans).find(key => key.toLowerCase() === card.toLowerCase());
-                var limit = bans[key]
+            // Normalize card name for comparison
+            var normalizedCard = card.toLowerCase().trim();
+            
+            if (bans.hasOwnProperty(normalizedCard)) {
+                var limit = bans[normalizedCard];
+                console.log(normalizedCard);
 
                 switch (limit) {
                     case "Semi-Forbidden":
@@ -123,7 +133,7 @@ function deckCheck(deck) {
                     case "Forbidden":
                     case "Limited":
                     case "Semi-Limited":
-                        if(count > parseInt(limit)) {
+                        if(count > limits[limit]) {
                             if(banlist[limits[limit]][card]) {
                                 banlist[limits[limit]][card] += count;
                             } else {
@@ -136,7 +146,6 @@ function deckCheck(deck) {
                 tooMany = true;
             }
         }
-
         var output = "";
         for (var res in restricts) {
             var limit = restricts[res];
