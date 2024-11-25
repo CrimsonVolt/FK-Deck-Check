@@ -171,7 +171,7 @@ function deckCheck(deck) {
 
         var validity = "";
         if (valid) {
-            validity = "List is valid!<br>Disclaimer: Does not check for correct deck size or certain alt art cards.<br><br>";
+            validity = "List is valid!<br>Disclaimer: Does not check for correct deck size.<br><br>";
         } else if (tooMany) {
             validity = "List is invalid!<br>You have over 3 copies of a card.<br><br>";
         } else {
