@@ -99,7 +99,7 @@ function deckCheck(deck) {
         "2" : {},
     };
     
-    fetch("https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/banlist2.json")
+    fetch("https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/banlist.json")
     .then((response) => response.text())
     .then((data) => {
         let bans = new Object();
