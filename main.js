@@ -1,22 +1,23 @@
-$(window).on('load', function() {
+$(window).on('load', async function() {
     $('body').css('visibility', 'visible'); // Show body when fully loaded
+    await fetchBanlist(); // Fetch the banlist first
 });
 
 $(document).ready(function() {
-    document.getElementById('ydk-import').addEventListener('change', function(event) {
+    document.getElementById('ydk-import').addEventListener('change', async function(event) {
         const file = event.target.files[0];
         const reader = new FileReader();
-        reader.onload = function(e) {
-            var deck = getDeckByYDK(e.target.result);
-            deckCheck(deck);
+        reader.onload = async function(e) {
+            var deck = await getDeckByYDK(e.target.result);
+            await deckCheck(deck);
         };
         reader.readAsText(file);
     });
 
-    document.getElementById('text-import').addEventListener('input', function() {
+    document.getElementById('text-import').addEventListener('input', async function() {
         var file = document.getElementById('text-import').value;
         var deck = getDeckByText(file);
-        deckCheck(deck);
+        await deckCheck(deck);
     });
 
     document.getElementById('clear').addEventListener('click', function() {
@@ -24,32 +25,59 @@ $(document).ready(function() {
     });
 });
 
-function getDeckByYDK(ydk) {
+// Global Variables
+let restricts = {"Semi-Forbidden": 1, "Restricted": 5, "Semi-Restricted": 10};
+let limits = {"Forbidden": 0, "Limited": 1, "Semi-Limited": 2};
+let bans = {};
+
+// Function to fetch the banlist
+async function fetchBanlist() {
+    try {
+        const response = await fetch("https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/banlist.json");
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        bans = await response.json();
+        console.log("Banlist loaded:", bans);
+
+        // Normalize keys to lowercase
+        bans = Object.fromEntries(Object.entries(bans).map(([key, value]) => [key.toLowerCase(), value]));
+    } catch (error) {
+        console.error("Error fetching banlist:", error);
+    }
+}
+
+async function getDeckByYDK(ydk) {
     var ids = ydk.split("\n");
     var deck = {};
 
-    fetch("https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/cards.json")
-    .then((response) => response.text())
-    .then((data) => {
-        let cards = new Object();
-        cards = JSON.parse(data)
+    const response = await fetch("https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/cards.json");
+    
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.text();
+    let cards = JSON.parse(data);
 
-        ids.forEach(id => {
-            id = id.trim();
-            if (!isNaN(id) && id.length > 0) {
-                var card = cards[id];
-                if (card) {
-                    if (deck[card]) {
-                        deck[card]++;
-                    } else {
-                        deck[card] = 1;
-                    }
-                }
+    ids.forEach(id => {
+        id = id.trim();
+        if (!isNaN(id) && id.length > 0) {
+            var card = cards[id];
+
+            // Add ID instead of name if unknown
+            if (!card) {
+                card = id;
+            }  
+            
+            // Add card to deck or additional copies
+            if (deck[card]) {
+                deck[card]++;
+            } else {
+                deck[card] = 1;
             }
-        });
+        }
     });
-
-    return deck;
+    
+    return deck; // Return populated deck after fetching
 }
 
 function getDeckByText(text) {
@@ -83,111 +111,83 @@ function splitNameNumber(inputString) {
     return null;
 }
 
-function deckCheck(deck) {
-    console.log(deck);
-    var valid = true;
-    var tooMany = false;
+// Function to check the deck
+async function deckCheck(deck) {
+    let valid = true;
+    let tooMany = false;
 
-    //Limitations
-    var restricts = {"Semi-Forbidden": 1, "Restricted": 5, "Semi-Restricted": 10};
-    let rList = {
-        "1" : {},
-        "5" : {},
-        "10" : {},
-    };
+    // Limitations
+    const rList = { "1": {}, "5": {}, "10": {} };
+    const banlist = { "0": {}, "1": {}, "2": {} };
 
-    var limits = {"Forbidden": 0, "Limited": 1, "Semi-Limited": 2};
-    let banlist = {
-        "0" : {},
-        "1" : {},
-        "2" : {},
-    };
-    
-    fetch("https://raw.githubusercontent.com/CrimsonVolt/FK-Deck-Check/main/banlist.json")
-    .then((response) => response.text())
-    .then((data) => {
-        let bans = JSON.parse(data);
-        // Normalize keys
-        bans = Object.fromEntries(Object.entries(bans).map(([key, value]) => [key.toLowerCase(), value]));
+    for (let card in deck) {
+        const count = deck[card];
+        const normalizedCard = card.toLowerCase().trim();
 
-        for (card in deck) {
-            var count = deck[card];
+        if (bans.hasOwnProperty(normalizedCard)) {
+            const limit = bans[normalizedCard];
 
-            // Normalize card name for comparison
-            var normalizedCard = card.toLowerCase().trim();
-            
-            if (bans.hasOwnProperty(normalizedCard)) {
-                var limit = bans[normalizedCard];
-                console.log(normalizedCard);
-
-                switch (limit) {
-                    case "Semi-Forbidden":
-                    case "Restricted":
-                    case "Semi-Restricted":
-                        if(rList[restricts[limit]][card]) {
-                            rList[restricts[limit]][card] += count;
-                        } else {
-                            rList[restricts[limit]][card] = count;
-                        }
-                        break;
-                    case "Forbidden":
-                    case "Limited":
-                    case "Semi-Limited":
-                        if(count > limits[limit]) {
-                            if(banlist[limits[limit]][card]) {
-                                banlist[limits[limit]][card] += count;
-                            } else {
-                                banlist[limits[limit]][card] = count;
-                            }
-                        }
-                }
-            } else if (count > 3) {
-                valid = false;
-                tooMany = true;
+            switch (limit) {
+                case "Semi-Forbidden":
+                case "Restricted":
+                case "Semi-Restricted":
+                    rList[restricts[limit]][card] = (rList[restricts[limit]][card] || 0) + count;
+                    break;
+                case "Forbidden":
+                case "Limited":
+                case "Semi-Limited":
+                    if (count > limits[limit]) {
+                        banlist[limits[limit]][card] = (banlist[limits[limit]][card] || 0) + count;
+                    }
+                    break;
             }
+        } else if (count > 3) {
+            valid = false;
+            tooMany = true;
         }
-        var output = "";
-        for (var res in restricts) {
-            var limit = restricts[res];
-            var total = 0;
-            output += res + ": LIMIT " + limit + "<br>";
+    }
 
-            var list = rList[limit];
-            for (var card in list) {
-                var count = list[card];
-                output += card + ": " + count + "<br>";
-                total += count;
-            }
-            output += "Total: " + total + "<br><br>";
-            if (total > parseInt(limit)) {
-                valid = false;
-            }
-        }
+    // Output results
+    generateOutput(valid, tooMany, rList, banlist);
+}
 
-        for (var limitation in limits) {
-            var limit = limits[limitation];
-            var list = banlist[limit];
-            if (Object.keys(list).length > 0) {
-                valid = false;
-                output += limitation + ": <br>";
-                for (var card in list) {
-                    var count = list[card];
-                    output += card + ": " + count + "<br>";
-                }
-                output += "<br>";
-            }
-        }
+// Function to generate output
+function generateOutput(valid, tooMany, rList, banlist) {
+    let output = "";
 
-        var validity = "";
-        if (valid) {
-            validity = "List is valid!<br>Disclaimer: Does not check for correct deck size.<br><br>";
-        } else if (tooMany) {
-            validity = "List is invalid!<br>You have over 3 copies of a card.<br><br>";
-        } else {
-            validity = "List is invalid!<br><br>";
+    for (let res in restricts) {
+        const limit = restricts[res];
+        let total = 0;
+        output += `${res}: LIMIT ${limit}<br>`;
+        
+        for (let card in rList[limit]) {
+            const count = rList[limit][card];
+            output += `${card}: ${count}<br>`;
+            total += count;
         }
         
-        var html = document.getElementById("output");
-        html.innerHTML = validity + output;
-    });
+        output += `Total: ${total}<br><br>`;
+        if (total > parseInt(limit)) valid = false;
+    }
+
+    for (let limitation in limits) {
+        const limit = limits[limitation];
+        if (Object.keys(banlist[limit]).length > 0) {
+            valid = false;
+            output += `${limitation}: <br>`;
+            for (let card in banlist[limit]) {
+                const count = banlist[limit][card];
+                output += `${card}: ${count}<br>`;
+            }
+            output += "<br>";
+        }
+    }
+
+    let validityMessage = valid ? 
+                          "List is valid!<br>Disclaimer: Does not check for correct deck size.<br><br>" : 
+                          tooMany ? 
+                          "List is invalid!<br>You have over 3 copies of a card.<br><br>" : 
+                          "List is invalid!<br>Does not follow the banlist.<br><br>";
+
+    document.getElementById("output").innerHTML = validityMessage + output;
 }
