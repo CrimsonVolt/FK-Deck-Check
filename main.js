@@ -84,7 +84,6 @@ function splitNameNumber(inputString) {
 }
 
 function deckCheck(deck) {
-    console.log(deck);
     var valid = true;
     var tooMany = false;
 
