@@ -123,7 +123,7 @@ function deckCheck(deck) {
                     case "Forbidden":
                     case "Limited":
                     case "Semi-Limited":
-                        if(count > parseInt(limit)) {
+                        if(count > limits[limit]) {
                             if(banlist[limits[limit]][card]) {
                                 banlist[limits[limit]][card] += count;
                             } else {
