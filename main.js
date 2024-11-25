@@ -80,7 +80,6 @@ function splitNameNumber(inputString) {
 }
 
 function deckCheck(deck) {
-    console.log(deck);
     var valid = true;
     var tooMany = false;
 
@@ -124,12 +123,13 @@ function deckCheck(deck) {
                     case "Forbidden":
                     case "Limited":
                     case "Semi-Limited":
-                        if(banlist[limits[limit]][card]) {
-                            banlist[limits[limit]][card] += count;
-                        } else {
-                            banlist[limits[limit]][card] = count;
+                        if(count > parseInt(limit)) {
+                            if(banlist[limits[limit]][card]) {
+                                banlist[limits[limit]][card] += count;
+                            } else {
+                                banlist[limits[limit]][card] = count;
+                            }
                         }
-                        break;
                 }
             } else if (count > 3) {
                 valid = false;
