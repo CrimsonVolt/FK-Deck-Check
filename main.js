@@ -118,7 +118,6 @@ function deckCheck(deck) {
             
             if (bans.hasOwnProperty(normalizedCard)) {
                 var limit = bans[normalizedCard];
-                console.log(normalizedCard);
 
                 switch (limit) {
                     case "Semi-Forbidden":
