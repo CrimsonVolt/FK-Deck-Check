@@ -23,12 +23,18 @@ $(document).ready(function() {
     document.getElementById('clear').addEventListener('click', function() {
         document.getElementById('text-import').value = "";
     });
+
+    document.getElementById('show-details').addEventListener('click', function() {
+        document.getElementById('details-container').style.display = "block";
+        document.getElementById('show-details').style.display = "none";
+    });
 });
 
 // Global Variables
 let restricts = {"Semi-Forbidden": 1, "Restricted": 5, "Semi-Restricted": 10};
 let limits = {"Forbidden": 0, "Limited": 1, "Semi-Limited": 2};
 let bans = {};
+let normalizedBans = {};
 
 // Function to fetch the banlist
 async function fetchBanlist() {
@@ -41,7 +47,7 @@ async function fetchBanlist() {
         console.log("Banlist loaded:", bans);
 
         // Normalize keys to lowercase
-        bans = Object.fromEntries(Object.entries(bans).map(([key, value]) => [key.toLowerCase(), value]));
+        normalizedBans = Object.fromEntries(Object.entries(bans).map(([key]) => [key.toLowerCase(), key]));
     } catch (error) {
         console.error("Error fetching banlist:", error);
     }
@@ -97,7 +103,7 @@ function getDeckByText(text) {
 }
 
 function splitNameNumber(inputString) {
-    const pattern = /^(?:([1-6])x|x?([1-6])\s+)?\s*(.+?)\s*(?:x?([1-6])|([1-6])x)?$/;
+    const pattern = /^(?:([1-6])x|x?([1-6])\s+)?\s*(.+?)\s*(?:x([1-6])|([1-6])x)?$/;
     const match = inputString.match(pattern);
 
     if (match) {
@@ -124,8 +130,9 @@ async function deckCheck(deck) {
         const count = deck[card];
         const normalizedCard = card.toLowerCase().trim();
 
-        if (bans.hasOwnProperty(normalizedCard)) {
-            const limit = bans[normalizedCard];
+        if (normalizedBans[normalizedCard]) {
+            card = normalizedBans[normalizedCard];
+            const limit = bans[card];
 
             switch (limit) {
                 case "Semi-Forbidden":
@@ -189,5 +196,7 @@ function generateOutput(valid, tooMany, rList, banlist) {
                           "List is invalid!<br>You have over 3 copies of a card.<br><br>" : 
                           "List is invalid!<br>Does not follow the banlist.<br><br>";
 
-    document.getElementById("output").innerHTML = validityMessage + output;
+    document.getElementById("output").style.display = "block";
+    document.getElementById("validity").innerHTML = validityMessage;
+    document.getElementById("details").innerHTML = output;
 }
