@@ -120,7 +120,8 @@ function splitNameNumber(inputString) {
 // Function to check the deck
 async function deckCheck(deck) {
     let valid = true;
-    let tooMany = false;
+    let validCount = true;
+    let deckCount = 0;
 
     // Limitations
     const rList = { "1": {}, "5": {}, "10": {} };
@@ -128,6 +129,7 @@ async function deckCheck(deck) {
 
     for (let card in deck) {
         const count = deck[card];
+        deckCount += count;
         const normalizedCard = card.toLowerCase().trim();
 
         if (normalizedBans[normalizedCard]) {
@@ -149,17 +151,16 @@ async function deckCheck(deck) {
                     break;
             }
         } else if (count > 3) {
-            valid = false;
-            tooMany = true;
+            validCount = false;
         }
     }
 
     // Output results
-    generateOutput(valid, tooMany, rList, banlist);
+    generateOutput(valid, validCount, deckCount, rList, banlist);
 }
 
 // Function to generate output
-function generateOutput(valid, tooMany, rList, banlist) {
+function generateOutput(valid, validCount, deckCount, rList, banlist) {
     let output = "";
 
     for (let res in restricts) {
@@ -190,13 +191,13 @@ function generateOutput(valid, tooMany, rList, banlist) {
         }
     }
 
-    let validityMessage = valid ? 
-                          "List is valid!<br>Disclaimer: Does not check for correct deck size.<br><br>" : 
-                          tooMany ? 
-                          "List is invalid!<br>You have over 3 copies of a card.<br><br>" : 
-                          "List is invalid!<br>Does not follow the banlist.<br><br>";
+    let msg = (valid && validCount && (deckCount >= 40 && deckCount <= 90)) ? "List is valid!<br>" : "List is invalid!<br>";
+    msg += valid ? "" : "Does not follow the banlist.<br>"
+    msg += validCount ? "" : "You have over 3 copies of a card.<br>"
+    msg += (deckCount < 40) ? "Not enough cards in deck.<br>" : (deckCount > 90) ? "Too many cards in deck.<br>" : "";
+    msg += "<br>"
 
     document.getElementById("output").style.display = "block";
-    document.getElementById("validity").innerHTML = validityMessage;
+    document.getElementById("validity").innerHTML = msg;
     document.getElementById("details").innerHTML = output;
 }
