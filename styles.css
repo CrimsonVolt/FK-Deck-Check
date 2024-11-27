@@ -76,5 +76,10 @@ input[type="button"]:hover {
 
 /* Output styles */
 #output {
+    display: none;
     margin-top: 20px;
+}
+
+#details-container {
+    display: none;
 }
